@@ -40,34 +40,51 @@ export interface AbiFetcher {
   fetchAbiForAddress: (address: Address) => Promise<Result<JsonFragment[], FetchAbiError>>
 }
 
+
+const fetchAsResult = async (input: RequestInfo) => {
+  try {
+    const res = await fetch(input)
+    return Ok(res)
+  } catch (error) {
+    return Promise.resolve(Err(new FetchingAbiError(error as any)))
+  }
+}
+
 export class SourcifyAbiFetcher implements AbiFetcher {
   constructor(public readonly chainId: number) {}
   async fetchAbiForAddress(address: Address): Promise<Result<JsonFragment[], FetchingAbiError>> {
-    const request = await fetch(
+    const requestResult = await fetchAsResult(
       `https://repo.sourcify.dev/contracts/full_match/${this.chainId}/${address}/metadata.json`
     )
-    if (!request.ok) {
+    if (!requestResult.ok) {
+      return requestResult
+    }
+    if (!requestResult.result.ok) {
       return Err(new FetchingAbiError(new Error('Could not fetch ABI')))
     }
-
-    const data = await request.json()
+    const data = await requestResult.result.json()
     const abi = data.output.abi
     return Ok(abi)
   }
 }
 
+
 export class ExplorerAbiFetcher implements AbiFetcher {
   constructor(public readonly baseUrl: string, public readonly apiKey?: string | undefined) {}
   async fetchAbiForAddress(address: Address): Promise<Result<JsonFragment[], FetchingAbiError>> {
     const apiKeyS = this.apiKey ? `&apikey=${this.apiKey}` : ''
-    const request = await fetch(
+    const requestResult = await fetchAsResult(
       `${this.baseUrl}/api?module=contract&action=getabi&address=${address}${apiKeyS}`
     )
-    if (!request.ok) {
-      return Err(new FetchingAbiError(new Error('Could not fetch ABI. Status:' + request.status)))
+    if (!requestResult.ok) {
+      return requestResult
     }
 
-    const data = await request.json()
+    if (!requestResult.result.ok) {
+      return Err(new FetchingAbiError(new Error('Could not fetch ABI. Status:' + requestResult.result.status)))
+    }
+
+    const data = await requestResult.result.json()
     if (data.status !== '1') {
       return Err(
         new FetchingAbiError(

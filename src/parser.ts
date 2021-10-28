@@ -39,14 +39,32 @@ interface Transaction {
   value: BigNumberish
 }
 
+interface ParserConstructorOpts {
+  abiFetchers?: AbiFetcher[]
+}
+
+interface ParserResult {
+  transactionDescription: Result<TransactionDescription, ParserErrors>
+}
+
 export class Parser {
+  public readonly abiFetchers: AbiFetcher[];
   /**
    * Creates a new instance of the parser
    * @param abiFetchers Array of AbiFetchers, order matters as priority (i.e. proxy fetcher before plain fetcher)
    */
-  constructor(public readonly abiFetchers: AbiFetcher[]) {}
+  constructor(opts: ParserConstructorOpts) {
+    this.abiFetchers = opts.abiFetchers ? opts.abiFetchers : []
+  }
 
-  async parseAsResult(tx: Transaction): Promise<Result<TransactionDescription, ParserErrors>> {
+  async parseAsResult(tx: Transaction): Promise<ParserResult> {
+    const transactionDescription = await this.parseTransactionDescriptionAsResult(tx)
+    return {
+      transactionDescription
+    }
+  }
+
+  async parseTransactionDescriptionAsResult(tx: Transaction): Promise<Result<TransactionDescription, ParserErrors>> {
     if (this.abiFetchers.length === 0) {
       return Err(new NoAbiFetchersError(new Error('No AbiFetchers specified')))
     }
@@ -67,7 +85,7 @@ export class Parser {
       return Err(new UnknownError((error as any).toString()))
     }
   }
-  parse = makeAsyncThrowable(this.parseAsResult.bind(this))
+  parseTransactionDescription = makeAsyncThrowable(this.parseTransactionDescriptionAsResult.bind(this))
 
   private formatParam(paramValue: any, paramType: ParamType) {
     if (paramType.arrayChildren) {
@@ -95,3 +113,5 @@ export class Parser {
     return `${functionName}(${inputs.join(', ')})`
   }
 }
+
+export {TransactionDescription} from '@ethersproject/abi'

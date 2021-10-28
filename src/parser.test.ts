@@ -5,11 +5,11 @@ import { Parser } from './parser'
 
 describe('Real transaction tests', () => {
   it('can properly decode a basic Celo TX', async () => {
-    const parser = new Parser(celoAbiFetchers)
+    const parser = new Parser({ abiFetchers: celoAbiFetchers })
     const provider = new ethers.providers.JsonRpcProvider('https://forno.celo.org')
     const txHash = '0x13c0fb425956878519a59cb67ad0f76f2399223c84b8fe5383f005d38b75c345'
     const tx = await provider.getTransaction(txHash)
-    const txDescription = await parser.parse({
+    const txDescription = await parser.parseTransactionDescription({
       from: tx.from,
       to: tx.to!,
       data: tx.data,
@@ -22,11 +22,11 @@ describe('Real transaction tests', () => {
   })
 
   it('can properly decode a Celo Core proxied TX', async () => {
-    const parser = new Parser(celoAbiFetchers)
+    const parser = new Parser({ abiFetchers: celoAbiFetchers })
     const provider = new ethers.providers.JsonRpcProvider('https://forno.celo.org')
     const txHash = '0x3d17faf7c8e9e5fdc69570c9b620cf5eb79db2e3e3c1bb6f9f1e1cd72184aeb9'
     const tx = await provider.getTransaction(txHash)
-    const txDescription = await parser.parse({
+    const txDescription = await parser.parseTransactionDescription({
       from: tx.from,
       to: tx.to!,
       data: tx.data,
@@ -39,13 +39,13 @@ describe('Real transaction tests', () => {
   })
 
   it('can decode a Ethereum proxied TX', async () => {
-    const parser = new Parser(ethAbiFetchers)
+    const parser = new Parser({ abiFetchers: ethAbiFetchers })
     const provider = new ethers.providers.JsonRpcProvider(
       'https://mainnet-nethermind.blockscout.com/'
     )
     const txHash = '0xb87ec0c256b81be5ca98040e58f27483167c773ef38c024e71e209410f8d26b3'
     const tx = await provider.getTransaction(txHash)
-    const txDescription = await parser.parse({
+    const txDescription = await parser.parseTransactionDescription({
       from: tx.from,
       to: tx.to!,
       data: tx.data,
