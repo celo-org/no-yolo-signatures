@@ -1,9 +1,10 @@
 import { ethers } from 'ethers'
+import { celoAddressInfoFetchers } from '.'
 import { celoAbiFetchers } from './abiFetcher'
 import { Parser } from './parser'
 
 async function main() {
-  const parser = new Parser({ abiFetchers: celoAbiFetchers })
+  const parser = new Parser({ abiFetchers: celoAbiFetchers, addressInfoFetchers: celoAddressInfoFetchers })
   const provider = new ethers.providers.JsonRpcProvider('https://forno.celo.org')
   if (process.argv.length > 3) {
     const parseResult = await parser.parseAsResult({
@@ -16,7 +17,8 @@ async function main() {
       console.log('Could not decode transaction')
       return
     }
-    console.log(parser.formatTxDescriptionToHuman(parseResult.transactionDescription.result))
+    console.log(`To: ${parser.formatAddress(process.argv[2], parseResult.addressInfo)}`)
+    console.log(parser.formatTxDescriptionToHuman(parseResult.transactionDescription.result, parseResult.addressInfo))
   } else {
     const txHash = process.argv[2]
     const tx = await provider.getTransaction(txHash)
@@ -30,7 +32,7 @@ async function main() {
       console.log('Could not decode transaction')
       return
     }
-    console.log(parser.formatTxDescriptionToHuman(parseResult.transactionDescription.result))
+    console.log(parser.formatTxDescriptionToHuman(parseResult.transactionDescription.result, parseResult.addressInfo))
   }
 }
 

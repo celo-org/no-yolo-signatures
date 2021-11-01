@@ -1,0 +1,16 @@
+{
+  "name": "Generic Address list",
+  "addresses": [{
+    "address": "0xE3D8bd6Aed4F159bc8000a9cD47CffDb95F96121",
+    "chainId": 42220,
+    "name": "Ubeswap Router",
+    "description": "This is the typical entry point for Ubeswap contract interactions",
+    "logoURI": "https://raw.githubusercontent.com/ubeswap/default-token-list/master/assets/asset_UBE.png"
+  }, {
+    "address": "0x67316300f17f063085Ca8bCa4bd3f7a5a3C66275",
+    "chainId": 42220,
+    "name": "Mento cUSD Exchange",
+    "description": "This is the Mento cUSD Exchange",
+    "logoURI": "https://raw.githubusercontent.com/ubeswap/default-token-list/master/assets/asset_UBE.png"
+  }] 
+}

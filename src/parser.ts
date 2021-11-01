@@ -1,8 +1,9 @@
 import { Address, Err, makeAsyncThrowable, Ok, Result, RootError } from '@celo/base'
 import { Interface, ParamType, TransactionDescription } from '@ethersproject/abi'
-import { BigNumberish } from 'ethers'
+import { AddressInfoType } from '.'
 import { AbiFetcher, FetchAbiError, getAbisFromFetchers } from './abiFetcher'
-import { BytesAsString } from './types'
+import { AddressFetchResult, AddressInfo, AddressInfoFetcher } from './addressInfo'
+import { Transaction } from './types'
 
 export enum ParserErrorTypes {
   NoAbiFetchers = 'NoAbiFetchers',
@@ -32,37 +33,71 @@ export class UnknownError extends RootError<ParserErrorTypes.Unknown> {
 
 export type ParserErrors = FetchAbiError | AbiMismatchError | UnknownError | NoAbiFetchersError
 
-interface Transaction {
-  from: Address
-  to: Address
-  data: BytesAsString
-  value: BigNumberish
-}
+
 
 interface ParserConstructorOpts {
-  abiFetchers?: AbiFetcher[]
+  abiFetchers?: AbiFetcher[],
+  addressInfoFetchers?: AddressInfoFetcher[]
 }
 
-interface ParserResult {
-  transactionDescription: Result<TransactionDescription, ParserErrors>
+export interface ParserResult {
+  transactionDescription: Result<TransactionDescription, ParserErrors>,
+  addressInfo: AddressFetchResult
 }
+
 
 export class Parser {
   public readonly abiFetchers: AbiFetcher[];
+  public readonly addressInfoFetchers: AddressInfoFetcher[];
   /**
    * Creates a new instance of the parser
    * @param abiFetchers Array of AbiFetchers, order matters as priority (i.e. proxy fetcher before plain fetcher)
    */
   constructor(opts: ParserConstructorOpts) {
     this.abiFetchers = opts.abiFetchers ? opts.abiFetchers : []
+    this.addressInfoFetchers = opts.addressInfoFetchers ? opts.addressInfoFetchers : []
   }
 
   async parseAsResult(tx: Transaction): Promise<ParserResult> {
     const transactionDescription = await this.parseTransactionDescriptionAsResult(tx)
+    const addressInfo = await this.getAddressInfo(tx, transactionDescription)
     return {
-      transactionDescription
+      transactionDescription,
+      addressInfo
     }
   }
+
+  async getAddressInfo(tx: Transaction, txDescriptionResult: Result<TransactionDescription, ParserErrors>): Promise<AddressFetchResult> {
+    const addresses = [tx.from, tx.to]
+    if (txDescriptionResult.ok) {
+      const addressesFromTxDescription = txDescriptionResult.result.args.flatMap((arg, index) => {
+        const fragment = txDescriptionResult.result.functionFragment.inputs[index]
+        return this.collectAddressesFromParam(arg, fragment)
+      })
+      addresses.push(...addressesFromTxDescription)
+    }
+
+    const context = { tx }
+
+    const result = await Promise.all(addresses.map(async address => {
+      const info = await Promise.all(this.addressInfoFetchers.map(_ => _.fetchInfo(address, context)))
+      return [address, info.flat()] as [Address, AddressInfo[]]
+    }))
+    const ret: AddressFetchResult = {}
+    result.forEach(([address, info]) => ret[address] = info)
+    return ret
+  }
+
+  private collectAddressesFromParam(paramValue: any, paramType: ParamType): Address[] {
+    if (paramType.arrayChildren) {
+      return paramValue.flatMap((arg: any) => this.collectAddressesFromParam(arg, paramType.arrayChildren))
+    }
+    if (paramType.type === 'address') {
+      return [paramValue]
+    }
+    return []
+  }
+
 
   async parseTransactionDescriptionAsResult(tx: Transaction): Promise<Result<TransactionDescription, ParserErrors>> {
     if (this.abiFetchers.length === 0) {
@@ -87,10 +122,10 @@ export class Parser {
   }
   parseTransactionDescription = makeAsyncThrowable(this.parseTransactionDescriptionAsResult.bind(this))
 
-  private formatParam(paramValue: any, paramType: ParamType) {
+  private formatParam(paramValue: any, paramType: ParamType, addressInfo?: AddressFetchResult) {
     if (paramType.arrayChildren) {
       return `[${paramValue
-        .map((el: any) => this.formatParam(el, paramType.arrayChildren))
+        .map((el: any) => this.formatParam(el, paramType.arrayChildren, addressInfo))
         .join(', ')}]`
     }
     if (paramType.type === 'uint256') {
@@ -98,17 +133,30 @@ export class Parser {
     }
 
     if (paramType.type === 'address') {
-      return `"${paramValue}"`
+      return `"${this.formatAddress(paramValue, addressInfo)}"`
     }
 
     return paramValue
   }
 
-  formatTxDescriptionToHuman(description: TransactionDescription) {
+  public formatAddress(address: string, addressInfo?: AddressFetchResult) {
+    if (!addressInfo) return address
+    const addyInfo = addressInfo[address]
+    if (addyInfo.length === 0) return address
+    switch (addyInfo[0].type) {
+      case AddressInfoType.TokenListInfo:
+        return `Token: ${addyInfo[0].name} (${addyInfo[0].symbol})`
+      case AddressInfoType.GenericAddressInfo:
+        return addyInfo[0].name
+    }
+    return address
+  }
+
+  formatTxDescriptionToHuman(description: TransactionDescription, addressInfo?: AddressFetchResult) {
     const functionName = description.name
     const inputs = description.args.map((arg, index) => {
       const fragment = description.functionFragment.inputs[index]
-      return `${fragment.name}: ${this.formatParam(arg, fragment)}`
+      return `${fragment.name}: ${this.formatParam(arg, fragment, addressInfo)}`
     })
     return `${functionName}(${inputs.join(', ')})`
   }
