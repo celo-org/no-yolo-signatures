@@ -58,3 +58,12 @@ The result of the parsing is effectively an [`ethers.js` `TransactionDescription
 While transaction decoding via an ABI increases transparency, very few people are actually able to read smart contract source code. In practice, many folks rely on "weak subjectivity" on contract addresses, i.e. they paste the address in a block explorer and determine whether it presents some kind of canonical identity with social consensus in usage or beyond. `no-yolo-signatures` can mechanize that natural user behavior by leveraging trusted sources, such as [Token Lists](https://tokenlists.org/) or generic address lists (which effectively act similar to [Etherscan's address tags](https://info.etherscan.com/address-tag-note/)).
 
 The result of the parsing is a dictionary where the key is the address and the value is an array of `AddressInfo` objects. It is recommended to leverage this info in displaying addresses involved in the `TransactionDescription` above.
+
+
+## Example
+
+```sh
+ yarn parse 0xE3D8bd6Aed4F159bc8000a9cD47CffDb95F96121 0x38ed17390000000000000000000000000000000000000000000000000029091656feba7d000000000000000000000000000000000000000000000000001d90acc863151800000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000289769b63e4727616c340989e396fe69ab42ed930000000000000000000000000000000000000000000000000000000061803d75000000000000000000000000000000000000000000000000000000000000000400000000000000000000000017700282592d6917f6a73d0bf8accf4d578c131e000000000000000000000000471ece3750da237f93b8e339c536989b8978a43800000000000000000000000000400fcbf0816bebb94654259de7273f4a05c762000000000000000000000000765de816845861e75a25fca122bb6898b8b1282a
+To: Ubeswap Router
+swapExactTokensForTokens(amountIn: 11550465598601853, amountOutMin: 8321846095320344, path: ["Token: Moola (MOO)", "Token: Celo (CELO)", "Token: Poof (POOF)", "Token: Celo Dollar (cUSD)"], to: "0x289769b63e4727616C340989E396fE69ab42Ed93", deadline: 1635794293)
+```
