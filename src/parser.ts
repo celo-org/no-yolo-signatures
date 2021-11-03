@@ -1,9 +1,9 @@
-import { Address, Err, makeAsyncThrowable, Ok, Result, RootError } from '@celo/base'
+import { Err, makeAsyncThrowable, Ok, Result, RootError } from '@celo/base'
 import { Interface, ParamType, TransactionDescription } from '@ethersproject/abi'
 import { AddressInfoType } from '.'
 import { AbiFetcher, FetchAbiError, getAbisFromFetchers } from './abiFetcher'
 import { AddressFetchResult, AddressInfo, AddressInfoFetcher } from './addressInfo'
-import { Transaction } from './types'
+import { Address, Transaction } from './types'
 
 export enum ParserErrorTypes {
   NoAbiFetchers = 'NoAbiFetchers',

@@ -1,7 +1,6 @@
-import { Address } from "../../celo-monorepo/packages/sdk/base/lib"
 import CeloTokenList from "./static/celoTokenList.json";
 import CeloGenericAddressList from "./static/celoGenericAddressList.json";
-import { Transaction } from "./types";
+import { Address, Transaction } from "./types";
 export enum AddressInfoType {
   TokenListInfo = 'tokenListInfo',
   GenericAddressInfo = 'genericAddressInfo',
