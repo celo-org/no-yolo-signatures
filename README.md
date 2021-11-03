@@ -51,6 +51,10 @@ export const celoAbiFetchers = [proxyAbiFetcher, celoSourcifyAbiFetcher, celoBlo
 const parser = new Parser({ abiFetchers: celoAbiFetchers, addressInfoFetchers: celoAddressInfoFetchers })
 ```
 
+The result of the parsing is effectively an [`ethers.js` `TransactionDescription`](https://docs.ethers.io/v5/api/utils/abi/interface/#TransactionDescription) which can be then displayed to the user.
+
 ### Address Info
 
 While transaction decoding via an ABI increases transparency, very few people are actually able to read smart contract source code. In practice, many folks rely on "weak subjectivity" on contract addresses, i.e. they paste the address in a block explorer and determine whether it presents some kind of canonical identity with social consensus in usage or beyond. `no-yolo-signatures` can mechanize that natural user behavior by leveraging trusted sources, such as [Token Lists](https://tokenlists.org/) or generic address lists (which effectively act similar to [Etherscan's address tags](https://info.etherscan.com/address-tag-note/)).
+
+The result of the parsing is a dictionary where the key is the address and the value is an array of `AddressInfo` objects. It is recommended to leverage this info in displaying addresses involved in the `TransactionDescription` above.
