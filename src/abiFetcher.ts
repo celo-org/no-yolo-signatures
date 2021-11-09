@@ -152,7 +152,7 @@ const proxyAbiFetcher = new ProxyAbiFetcher(celoProvider, [
 ])
 export const celoAbiFetchers = [proxyAbiFetcher, celoSourcifyAbiFetcher, celoBlockscoutAbiFetcher]
 
-const ethSourcifyAbiFetcher = new SourcifyAbiFetcher(42220)
+const ethSourcifyAbiFetcher = new SourcifyAbiFetcher(1)
 const etherscanAbiFetcher = new ExplorerAbiFetcher('https://api.etherscan.io')
 const ethProvider = new JsonRpcProvider('https://mainnet-nethermind.blockscout.com/')
 const ethProxyAbiFetcher = new ProxyAbiFetcher(ethProvider, [
