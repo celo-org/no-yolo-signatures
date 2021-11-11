@@ -1,6 +1,5 @@
-import CeloTokenList from "./static/celoTokenList.json";
-import CeloGenericAddressList from "./static/celoGenericAddressList.json";
-import { Address, Transaction } from "./types";
+import { Address, Transaction, TokenList, GenericAddressList } from "./types";
+import { NETWORKS } from ".";
 export enum AddressInfoType {
   TokenListInfo = 'tokenListInfo',
   GenericAddressInfo = 'genericAddressInfo',
@@ -44,25 +43,7 @@ export interface AddressInfoFetcher {
   fetchInfo: (address: Address, context: AddressInfoFetchContext) => Promise<Array<AddressInfo>>
 }
 
-interface TokenList {
-  tokens: Array<{
-    chainId: number,
-    symbol: string,
-    address: Address,
-    name: string,
-    logoURI: string
-  }>
-}
 
-interface GenericAddressList {
-  addresses: Array<{
-    chainId: number,
-    address: Address,
-    name: string,
-    description: string,
-    logoURI: string
-  }>
-}
 
 export class TokenListAddressInfoFetcher implements AddressInfoFetcher {
   constructor(public readonly tokenList: TokenList) { }
@@ -105,4 +86,17 @@ export class ContextAddressInfoFetcher implements AddressInfoFetcher {
     return Promise.resolve([])
   }
 }
-export const celoAddressInfoFetchers = [new GenericAddressListInfoFetcher(CeloGenericAddressList), new TokenListAddressInfoFetcher(CeloTokenList), new ContextAddressInfoFetcher()]
+
+export const getAddressInfoFetchersForChainId = (chainId: number) => {
+  const contextFetcher = new ContextAddressInfoFetcher()
+  const network = NETWORKS[chainId]
+  if (!network) {
+    return [contextFetcher]
+  }
+  return [
+    network.genericAddressList ? [new GenericAddressListInfoFetcher(network.genericAddressList)] : [],
+    network.tokenList ? [new TokenListAddressInfoFetcher(network.tokenList)] : [],
+    [contextFetcher]
+  ].flat()
+
+}

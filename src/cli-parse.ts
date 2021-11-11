@@ -1,9 +1,11 @@
 import { ethers } from 'ethers'
-import { celoAddressInfoFetchers } from '.'
-import { celoAbiFetchers } from './abiFetcher'
+import { getAbiFetchersForChainId, getAddressInfoFetchersForChainId } from '.'
 import { Parser } from './parser'
 
 async function main() {
+  const celoAbiFetchers = getAbiFetchersForChainId(42220)
+  const celoAddressInfoFetchers = getAddressInfoFetchersForChainId(42220)
+
   const parser = new Parser({ abiFetchers: celoAbiFetchers, addressInfoFetchers: celoAddressInfoFetchers })
   const provider = new ethers.providers.JsonRpcProvider('https://forno.celo.org')
   if (process.argv.length > 3) {

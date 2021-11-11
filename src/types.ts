@@ -12,3 +12,21 @@ export interface Transaction {
   data: BytesAsString
   value: BigNumberish
 }
+export interface TokenList {
+  tokens: Array<{
+    chainId: number,
+    symbol: string,
+    address: Address,
+    name: string,
+    logoURI: string
+  }>
+}
+export interface GenericAddressList {
+  addresses: Array<{
+    chainId: number,
+    address: Address,
+    name: string,
+    description: string,
+    logoURI: string
+  }>
+}

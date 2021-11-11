@@ -1,8 +1,11 @@
 import { ethers } from 'ethers'
-import { celoAddressInfoFetchers } from './addressInfo'
-import { celoAbiFetchers, ethAbiFetchers } from './abiFetcher'
+import { getAbiFetchersForChainId, getAddressInfoFetchersForChainId } from '.'
 import { Parser } from './parser'
 // Real network tests
+
+const celoAbiFetchers = getAbiFetchersForChainId(42220)
+const ethAbiFetchers = getAbiFetchersForChainId(1, { accomodateRateLimit: true })
+const celoAddressInfoFetchers = getAddressInfoFetchersForChainId(42220)
 
 describe('Real transaction tests', () => {
   it('can properly decode a basic Celo TX', async () => {

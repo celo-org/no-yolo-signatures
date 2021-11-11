@@ -3,6 +3,7 @@ import { JsonFragment } from '@ethersproject/abi'
 import { Provider } from '@ethersproject/abstract-provider'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { fetch } from 'cross-fetch'
+import { NETWORKS } from './networks'
 import proxyV1 from './static/proxy-v1'
 import usdcProxy from './static/usdc-proxy'
 import { Address, KnownProxy } from './types'
@@ -143,23 +144,26 @@ export const getAbisFromFetchers = async (abiFetchers: AbiFetcher[], address: Ad
   }
 }
 
-const celoSourcifyAbiFetcher = new SourcifyAbiFetcher(42220)
-const celoBlockscoutAbiFetcher = new ExplorerAbiFetcher('https://explorer.celo.org')
-const celoProvider = new JsonRpcProvider('https://forno.celo.org')
-const proxyAbiFetcher = new ProxyAbiFetcher(celoProvider, [
-  celoSourcifyAbiFetcher,
-  celoBlockscoutAbiFetcher,
-])
-export const celoAbiFetchers = [proxyAbiFetcher, celoSourcifyAbiFetcher, celoBlockscoutAbiFetcher]
+interface GetAbiFetcherOptions {
+  explorerAPIKey?: string
+  // Some explorers have an aggressive rate limit
+  accomodateRateLimit?: boolean
+}
+export const getAbiFetchersForChainId = (chainId: number, opts?: GetAbiFetcherOptions) => {
+  const sourcifyAbiFetcher = new SourcifyAbiFetcher(chainId)
+  const network = NETWORKS[chainId]
+  if (!network) {
+    return [sourcifyAbiFetcher]
+  }
 
-const ethSourcifyAbiFetcher = new SourcifyAbiFetcher(1)
-const etherscanAbiFetcher = new ExplorerAbiFetcher('https://api.etherscan.io')
-const ethProvider = new JsonRpcProvider('https://mainnet-nethermind.blockscout.com/')
-const ethProxyAbiFetcher = new ProxyAbiFetcher(ethProvider, [
-  ethSourcifyAbiFetcher,
-  etherscanAbiFetcher,
-])
-export const ethAbiFetchers = [ethProxyAbiFetcher, ethSourcifyAbiFetcher]
+  const explorerAbiFetcher = new ExplorerAbiFetcher(network.explorerAPIURL, opts?.explorerAPIKey)
+  const provider = new JsonRpcProvider(network.rpcURL)
+  const proxyAbiFetcher = new ProxyAbiFetcher(provider, [sourcifyAbiFetcher, explorerAbiFetcher])
+  if (opts?.accomodateRateLimit) {
+    return [proxyAbiFetcher, sourcifyAbiFetcher]
+  }
+  return [proxyAbiFetcher, explorerAbiFetcher, sourcifyAbiFetcher]
+}
 
 const stripMetadataFromBytecode = (bytecode: string): string => {
   // Docs:
