@@ -1,5 +1,6 @@
 import { Address, Transaction, TokenList, GenericAddressList } from "./types";
 import { NETWORKS } from ".";
+import fetch from "cross-fetch";
 export enum AddressInfoType {
   TokenListInfo = 'tokenListInfo',
   GenericAddressInfo = 'genericAddressInfo',
@@ -10,22 +11,24 @@ export enum ContextInfoType {
   MsgSender = 'msgSender'
 }
 
-interface TokenAddressInfo {
+export interface TokenAddressInfo {
   type: AddressInfoType.TokenListInfo
   chainId: number,
   symbol: string,
   address: Address,
   name: string,
   logoURI: string
+  source: string
 }
 
-interface GenericAddressInfo {
+export interface GenericAddressInfo {
   type: AddressInfoType.GenericAddressInfo
   chainId: number,
   address: Address,
   name: string,
   description: string,
   logoURI: string
+  source: string
 }
 
 interface ContextAddressInfo {
@@ -43,10 +46,24 @@ export interface AddressInfoFetcher {
   fetchInfo: (address: Address, context: AddressInfoFetchContext) => Promise<Array<AddressInfo>>
 }
 
+export enum BuiltInAddressInfoFetchersType {
+  TokenList = 'TokenList',
+  GenericAddressList = 'GenericAddressList',
+  Context = 'Context'
+}
+
+export type BuiltInAddressInfoFetcher = TokenListAddressInfoFetcher | GenericAddressListInfoFetcher | ContextAddressInfoFetcher
+
 
 
 export class TokenListAddressInfoFetcher implements AddressInfoFetcher {
-  constructor(public readonly tokenList: TokenList) { }
+  public readonly type = BuiltInAddressInfoFetchersType.TokenList
+  static async fromURL(url: string) {
+    const resp = await fetch(url)
+    const json = await resp.json()
+    return new this(json, url)
+  }
+  constructor(public readonly tokenList: TokenList, public readonly source: string) { }
   fetchInfo(address: Address): Promise<Array<AddressInfo>> {
     const match = this.tokenList.tokens.find(_ => _.address === address)
     if (!match) {
@@ -55,13 +72,20 @@ export class TokenListAddressInfoFetcher implements AddressInfoFetcher {
 
     return Promise.resolve([{
       type: AddressInfoType.TokenListInfo,
-      ...match
+      ...match,
+      source: this.source
     }])
   }
 }
 
 export class GenericAddressListInfoFetcher implements AddressInfoFetcher {
-  constructor(public readonly addressList: GenericAddressList) { }
+  public readonly type = BuiltInAddressInfoFetchersType.GenericAddressList
+  static async fromURL(url: string) {
+    const resp = await fetch(url)
+    const json = await resp.json()
+    return new this(json, url)
+  }
+  constructor(public readonly addressList: GenericAddressList, public readonly source: string) { }
   fetchInfo(address: Address): Promise<Array<AddressInfo>> {
     const match = this.addressList.addresses.find(_ => _.address === address)
     if (!match) {
@@ -70,12 +94,14 @@ export class GenericAddressListInfoFetcher implements AddressInfoFetcher {
 
     return Promise.resolve([{
       type: AddressInfoType.GenericAddressInfo,
-      ...match
+      ...match,
+      source: this.source
     }])
   }
 }
 
 export class ContextAddressInfoFetcher implements AddressInfoFetcher {
+  public readonly type = BuiltInAddressInfoFetchersType.Context
   fetchInfo(address: Address, context: AddressInfoFetchContext): Promise<ContextAddressInfo[]> {
     if (address === context.tx.from) {
       return Promise.resolve([{
@@ -87,15 +113,15 @@ export class ContextAddressInfoFetcher implements AddressInfoFetcher {
   }
 }
 
-export const getAddressInfoFetchersForChainId = (chainId: number) => {
+export const getAddressInfoFetchersForChainId = async (chainId: number) => {
   const contextFetcher = new ContextAddressInfoFetcher()
   const network = NETWORKS[chainId]
   if (!network) {
     return [contextFetcher]
   }
   return [
-    network.genericAddressList ? [new GenericAddressListInfoFetcher(network.genericAddressList)] : [],
-    network.tokenList ? [new TokenListAddressInfoFetcher(network.tokenList)] : [],
+    network.genericAddressListUrl ? [await GenericAddressListInfoFetcher.fromURL(network.genericAddressListUrl)] : [],
+    network.tokenListUrl ? [await TokenListAddressInfoFetcher.fromURL(network.tokenListUrl)] : [],
     [contextFetcher]
   ].flat()
 

@@ -1,13 +1,17 @@
 import { ethers } from 'ethers'
-import { getAbiFetchersForChainId, getAddressInfoFetchersForChainId } from '.'
+import { AddressInfoFetcher, getAbiFetchersForChainId, getAddressInfoFetchersForChainId } from '.'
 import { Parser } from './parser'
 // Real network tests
 
-const celoAbiFetchers = getAbiFetchersForChainId(42220)
-const ethAbiFetchers = getAbiFetchersForChainId(1, { accomodateRateLimit: true })
-const celoAddressInfoFetchers = getAddressInfoFetchersForChainId(42220)
+const celoAbiFetchers= getAbiFetchersForChainId(42220)
+const ethAbiFetchers= getAbiFetchersForChainId(1, { accomodateRateLimit: true })
+let celoAddressInfoFetchers : AddressInfoFetcher[]
 
 describe('Real transaction tests', () => {
+  beforeAll(async () => {
+    celoAddressInfoFetchers= await getAddressInfoFetchersForChainId(42220)
+  })
+
   it('can properly decode a basic Celo TX', async () => {
     const parser = new Parser({ abiFetchers: celoAbiFetchers, addressInfoFetchers: celoAddressInfoFetchers })
     const provider = new ethers.providers.JsonRpcProvider('https://forno.celo.org')
