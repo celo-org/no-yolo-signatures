@@ -4,7 +4,8 @@ import fetch from "cross-fetch";
 export enum AddressInfoType {
   TokenListInfo = 'tokenListInfo',
   GenericAddressInfo = 'genericAddressInfo',
-  ContextInfo = 'contextInfo'
+  ContextInfo = 'contextInfo',
+  GenericWarningInfo = 'genericWarningInfo'
 }
 
 export enum ContextInfoType {
@@ -31,13 +32,23 @@ export interface GenericAddressInfo {
   source: string
 }
 
+export interface GenericWarningInfo {
+  type: AddressInfoType.GenericWarningInfo
+  chainId: number,
+  address: Address,
+  name: string,
+  description: string,
+  logoURI: string
+  source: string
+}
+
 interface ContextAddressInfo {
   type: AddressInfoType.ContextInfo,
   contextType: ContextInfoType
 }
 
 
-export type AddressInfo = TokenAddressInfo | GenericAddressInfo | ContextAddressInfo
+export type AddressInfo = TokenAddressInfo | GenericAddressInfo | ContextAddressInfo | GenericWarningInfo
 export type AddressFetchResult = { [key: Address]: Array<AddressInfo> }
 interface AddressInfoFetchContext {
   tx: Transaction
@@ -49,10 +60,11 @@ export interface AddressInfoFetcher {
 export enum BuiltInAddressInfoFetchersType {
   TokenList = 'TokenList',
   GenericAddressList = 'GenericAddressList',
+  GenericWarningList = 'GenericWarningList',
   Context = 'Context'
 }
 
-export type BuiltInAddressInfoFetcher = TokenListAddressInfoFetcher | GenericAddressListInfoFetcher | ContextAddressInfoFetcher
+export type BuiltInAddressInfoFetcher = TokenListAddressInfoFetcher | GenericAddressListInfoFetcher | ContextAddressInfoFetcher | GenericWarningListInfoFetcher
 
 
 
@@ -99,6 +111,29 @@ export class GenericAddressListInfoFetcher implements AddressInfoFetcher {
     }])
   }
 }
+
+export class GenericWarningListInfoFetcher implements AddressInfoFetcher {
+  public readonly type = BuiltInAddressInfoFetchersType.GenericWarningList
+  static async fromURL(url: string) {
+    const resp = await fetch(url)
+    const json = await resp.json()
+    return new this(json, url)
+  }
+  constructor(public readonly addressList: GenericAddressList, public readonly source: string) { }
+  fetchInfo(address: Address): Promise<Array<AddressInfo>> {
+    const match = this.addressList.addresses.find(_ => _.address === address)
+    if (!match) {
+      return Promise.resolve([])
+    }
+
+    return Promise.resolve([{
+      type: AddressInfoType.GenericWarningInfo,
+      ...match,
+      source: this.source
+    }])
+  }
+}
+
 
 export class ContextAddressInfoFetcher implements AddressInfoFetcher {
   public readonly type = BuiltInAddressInfoFetchersType.Context
