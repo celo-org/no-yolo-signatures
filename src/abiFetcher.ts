@@ -145,6 +145,7 @@ export const getAbisFromFetchers = async (abiFetchers: AbiFetcher[], address: Ad
 }
 
 interface GetAbiFetcherOptions {
+  rpcUrls?: {[chainId: number] : string}
   explorerAPIKey?: string
   // Some explorers have an aggressive rate limit
   accomodateRateLimit?: boolean
@@ -157,7 +158,8 @@ export const getAbiFetchersForChainId = (chainId: number, opts?: GetAbiFetcherOp
   }
 
   const explorerAbiFetcher = new ExplorerAbiFetcher(network.explorerAPIURL, opts?.explorerAPIKey)
-  const provider = new JsonRpcProvider(network.rpcURL)
+  const rpcUrl = opts?.rpcUrls?.[chainId] || network.rpcURL;
+  const provider = new JsonRpcProvider(rpcUrl)
   const proxyAbiFetcher = new ProxyAbiFetcher(provider, [sourcifyAbiFetcher, explorerAbiFetcher])
   if (opts?.accomodateRateLimit) {
     return [proxyAbiFetcher, sourcifyAbiFetcher]
