@@ -1,5 +1,5 @@
 {
-  "name": "@uniswap/no-yolo-signatures",
+  "name": "no-yolo-signatures",
   "version": "0.0.1-alpha5",
   "description": "Tooling to discourage yolo tx signing",
   "author": "Nam Chu Hoai",
